@@ -38,7 +38,7 @@ class RovController:
     self.motors["FL"] = MotorController("P9_14")
     self.motors["FR"] = MotorController("P9_22")
     self.motors["TL"] = MotorController("P9_42")
-    self.motors["TR"] = MotorController("P8_13")
+    self.motors["TR"] = MotorController("P8_13") #P2B
     #self.motors["R0"] = MotorController("P9_42")
     #self.motors["R1"] = MotorController("P8_13")
     #self.motors["R2"] = MotorController("P8_19")
