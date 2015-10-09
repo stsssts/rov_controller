@@ -26,6 +26,7 @@ class MotorController():
       power = math.copysign(self.MAX, power)
     time = self.stop_time + power*self.time_delta
     percent = 100*time/self.period
+    print self.port, percent
     PWM.set_duty_cycle(self.port, percent)
 
   def cleanup(self):
@@ -35,38 +36,38 @@ class RovController:
   def __init__(self):
     self.motors = {}
     self.motors["FL"] = MotorController("P9_14")
-    self.motors["FR"] = MotorController("P9_16")
-    self.motors["TL"] = MotorController("P9_22")
-    self.motors["TR"] = MotorController("P9_28")
-    self.motors["R0"] = MotorController("P9_42")
-    self.motors["R1"] = MotorController("P8_13")
-    self.motors["R2"] = MotorController("P8_19")
+    self.motors["FR"] = MotorController("P9_22")
+    self.motors["TL"] = MotorController("P9_42")
+    self.motors["TR"] = MotorController("P8_13")
+    #self.motors["R0"] = MotorController("P9_42")
+    #self.motors["R1"] = MotorController("P8_13")
+    #self.motors["R2"] = MotorController("P8_19")
 
     PWM.cleanup()
     for motor in self.motors.values():
       motor.start()
 
     rospy.init_node('bottom_side', anonymous=True)
-    rospy.Subscriber("rov_controller", ControlData, self.callback)
+    rospy.Subscriber("rov_control", ControlData, self.callback)
 
   def __exit__(self, exc_type, exc_value, traceback):
     for motor in self.motors.values():
       motor.cleanup()
     PWM.cleanup()
 
-
   def callback(self, data):
-    message = ControlData()
-    if message.stop:
-      for motor in self.motors.value():
+    print data 
+    if data.stop:
+      for motor in self.motors.values():
         motor.set_power(0)
-      else:
-        self.motors["FL"].set_power(data.forward_left) 
-        self.motors["FR"].set_power(data.forward_right) 
-        self.motors["TL"].set_power(data.top_left) 
-        self.motors["TR"].set_power(data.top_right) 
+    else:
+      self.motors["FL"].set_power(data.forward_left) 
+      self.motors["FR"].set_power(data.forward_right) 
+      self.motors["TL"].set_power(data.top_left) 
+      self.motors["TR"].set_power(data.top_right) 
     
 if __name__ == '__main__':
     core = RovController()
+
     while True:
         pass
