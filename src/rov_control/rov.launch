@@ -1,9 +1,9 @@
 <launch>
-   <machine name="bottom" address="rov-bottom" env-loader="/home/ubuntu/rosenv.sh" user="root" password="temppwd" />
+   <machine name="bbb" address="rov-bottom" env-loader="/home/ubuntu/rov_controller/src/bottom/remote_init.sh" user="root" password="temppwd" />
 
    <rosparam param="joy_node/dev">"/dev/input/js0"</rosparam>
 
    <node name="rov_joy" pkg="joy" type = "joy_node" respawn="true"/>
-   <node name="rov_controller" pkg="rov_control" type="surface.py" respawn="true"/>
-   <node machine="bottom" name="rov_bottom" pkg="rov_bottom" type = "rov_bottom.py" respawn="true"/>
+   <node name="surface" pkg="rov_control" type="surface.py" respawn="true"/>
+   <node machine="bbb" name="bottom" pkg="bottom" type = "bottom.py" respawn="true"/>
 </launch>

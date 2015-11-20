@@ -19,7 +19,7 @@ class RovController:
 
         self.BLOCK_MODE = True
 
-        rospy.init_node('bottom_side', anonymous=True)
+        rospy.init_node('surface_side', anonymous=True)
         self.publisher = rospy.Publisher('rov_control', ControlData, queue_size=10)
         rospy.Subscriber("joy", Joy, self.callback)
         self.last_message = ControlData()
