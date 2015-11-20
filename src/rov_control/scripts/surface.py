@@ -12,6 +12,7 @@ class RovController:
 	self.STRAFE_BUTTON = 3
 	self.STOP_BUTTON = 1
 
+	self.THRESHOLD_AXIS = 4
 	self.DEPTH_AXIS = 2
 	self.FORWARD_AXIS = 1
 	self.TURN_AXIS = 0
@@ -24,6 +25,14 @@ class RovController:
         self.last_message = ControlData()
         self.last_message.stop = True
         self.received_message = False
+        self.THRESHOLD = 0.25
+        self.THRESHOLD_STEP = 0.01
+
+        self.dirs = {}
+        self.dirs["FL"] = 1.0
+        self.dirs["FR"] = 1.0
+        self.dirs["TL"] = 1.0
+        self.dirs["TR"] = 1.0
 
     def rotate_moving(self, data, message):
         message.top_left = message.top_right = data.axes[self.DEPTH_AXIS]        
@@ -48,7 +57,18 @@ class RovController:
             message.forward_right  *= message.forward_right + data.axes[self.TURN_AXIS]*math.copysign(1,message.forward_right)
         return message
 
+    def apply_dirs(self, message):
+        message.forward_left  *= self.dirs["FL"]
+        message.forward_right *= self.dirs["FR"]
+        message.top_left      *= self.dirs["TR"]
+        message.top_right     *= self.dirs["TL"]
+
     def callback(self, data):
+        self.THRESHOLD += data.axes[self.THRESHOLD_AXIS]*self.THRESHOLD_STEP
+        if self.THRESHOLD > 1.0:
+            self.THRESHOLD = 1.0
+        elif self.THRESHOLD < 0:
+            self.THRESHOLD = 0.0
         message = ControlData()
         if data.buttons[self.STOP_BUTTON] == 1 and data.buttons[self.ROTATE_BUTTON] == 1 and data.buttons[self.STRAFE_BUTTON] == 1:
             self.BLOCK_MODE = False
@@ -62,6 +82,8 @@ class RovController:
             self.normal_moving(data, message)
    
         message.stop = self.BLOCK_MODE 
+        message.max_level = self.THRESHOLD
+        self.apply_dirs(message)
         self.last_message = message
         self.received_message = True
         #print "message"
