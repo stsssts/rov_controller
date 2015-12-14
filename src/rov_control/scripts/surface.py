@@ -8,14 +8,21 @@ from sensor_msgs.msg import Joy
 
 class RovController:
     def __init__ (self):
-        self.ROTATE_BUTTON = 0
-	self.STRAFE_BUTTON = 3
-	self.STOP_BUTTON = 1
+        self.axes = {}
+        self.axes["forward"] = 1
+        self.axes["lag"] = 0
+        self.axes["depth"] = 2
+        self.axes["yaw"] = 3
+        self.axes["threshold"] = 4
 
-	self.THRESHOLD_AXIS = 4
-	self.DEPTH_AXIS = 2
-	self.FORWARD_AXIS = 1
-	self.TURN_AXIS = 0
+        self.buttons = {}
+        self.buttons["rotate"] = 0
+        self.buttons["stop"]   = 1
+        self.buttons["pitch_shift_increase"]  = 4
+        self.buttons["pitch_shift_decrease"]  = 5
+
+        self.pitch_shift = 0
+        self.yaw_shift  = 0
 
         self.BLOCK_MODE = True
 
@@ -27,66 +34,75 @@ class RovController:
         self.received_message = False
         self.THRESHOLD = 0.25
         self.THRESHOLD_STEP = 0.01
+                      
+        self.dirs = ControlData()
+        self.dirs.forward_left  = 1.0
+        self.dirs.forward_right = 1.0
+        self.dirs.lag_front     = 1.0
+        self.dirs.lag_back      = 1.0
+        self.dirs.top_front     = 1.0
+        self.dirs.top_back      = 1.0
 
-        self.dirs = {}
-        self.dirs["FL"] = 1.0
-        self.dirs["FR"] = 1.0
-        self.dirs["TL"] = 1.0
-        self.dirs["TR"] = 1.0
+    def trunc_value(value, high_border = 1, low_border = -1):
+        if value > high_border:
+            value = high_border
+        elif self.THRESHOLD < low_border:
+            value = low_border
 
-    def rotate_moving(self, data, message):
-        message.top_left = message.top_right = data.axes[self.DEPTH_AXIS]        
-        message.forward_left  =  data.axes[self.TURN_AXIS]
-        message.forward_right = -data.axes[self.TURN_AXIS]        
-        
-        return message
-    
-    def strafe_moving(self, data, message):
-        message.top_left  =  data.axes[self.TURN_AXIS]
-        message.top_right = -data.axes[self.TURN_AXIS]        
-       
-        return message
+    def control_threshold(self, data, message):
+        self.THRESHOLD += data.axes[self.axes["threshold"]]*self.THRESHOLD_STEP
+        self.THRESHOLD = trunc_value(self.THRESHOLD, 1.0, 0)
 
-    def normal_moving(self, data, message):
-        message.top_left = message.top_right = data.axes[self.DEPTH_AXIS]        
-        message.forward_left  = data.axes[self.FORWARD_AXIS]
-        message.forward_right = data.axes[self.FORWARD_AXIS]
-        if data.axes[self.TURN_AXIS] > 0:
-            message.forward_left  *= message.forward_left - data.axes[self.TURN_AXIS]*math.copysign(1,message.forward_left)
-        else:
-            message.forward_right  *= message.forward_right + data.axes[self.TURN_AXIS]*math.copysign(1,message.forward_right)
-        return message
+        message.max_level = self.THRESHOLD
+
+    def control_stop(self, data, message):
+        if data.buttons[self.buttons["stop"]] == 1 and data.buttons[self.buttons["rotate"]] == 1:
+            self.BLOCK_MODE = False
+        elif data.buttons[self.buttons["stop"]] == 1:
+            self.BLOCK_MODE = True        
+        message.stop = self.BLOCK_MODE 
+
+    def control_vertical(self, data, message):
+        if data.buttons[self.buttons["pitch_shift_increase"]] == 1:
+            self.pitch_shift += 0.01
+        elif data.buttons[self.buttons["pitch_shift_decrease"]]:
+            self.pitch_shift -= 0.01
+        self.pitch_shift = trunc_value(self.pitch_shift)
+
+        message.top_front = message.top_back = data.axes[self.axes["depth"]]        
+        message.top_front = trunc_value(message.top_front + self.pitch_shift)
+        message.top_back  = trunc_value(message.top_back  - self.pitch_shift)
+
+    def control_horisontal(self, data, message):
+        yaw_shift = data.axes[self.axes["yaw"]]
+
+        message.forward_left = message.forward_right = data.axes[self.axes["forward"]]
+        message.lag_front    = message.lag_back      = data.axes[self.axes["lag"]] 
+
+        message.forward_left  = trunc_value(yaw_shift + message.forward_left)
+        message.forward_right = trunc_value(yaw_shift - message.forward_right)
+        message.lag_front     = trunc_value(yaw_shift + message.lag_front)
+        message.lag_back      = trunc_value(yaw_shift - message.lag_back)    
 
     def apply_dirs(self, message):
-        message.forward_left  *= self.dirs["FL"]
-        message.forward_right *= self.dirs["FR"]
-        message.top_left      *= self.dirs["TR"]
-        message.top_right     *= self.dirs["TL"]
+        message.forward_left  *= self.dirs.forward_left
+        message.forward_right *= self.dirs.forward_right
+        message.lag_front     *= self.dirs.lag_front
+        message.lag_back      *= self.dirs.lag_back
+        message.top_front     *= self.dirs.top_front
+        message.top_back      *= self.dirs.top_back
 
     def callback(self, data):
-        self.THRESHOLD += data.axes[self.THRESHOLD_AXIS]*self.THRESHOLD_STEP
-        if self.THRESHOLD > 1.0:
-            self.THRESHOLD = 1.0
-        elif self.THRESHOLD < 0:
-            self.THRESHOLD = 0.0
         message = ControlData()
-        if data.buttons[self.STOP_BUTTON] == 1 and data.buttons[self.ROTATE_BUTTON] == 1 and data.buttons[self.STRAFE_BUTTON] == 1:
-            self.BLOCK_MODE = False
-        elif data.buttons[self.STOP_BUTTON] == 1:
-            self.BLOCK_MODE = True        
-        elif data.buttons[self.ROTATE_BUTTON] == 1:
-            self.rotate_moving(data, message)
-        elif data.buttons[self.STRAFE_BUTTON] == 1:
-            self.strafe_moving(data, message)
-        else:
-            self.normal_moving(data, message)
-   
-        message.stop = self.BLOCK_MODE 
-        message.max_level = self.THRESHOLD
+
+        self.control_stop(data, message)
+        self.control_threshold(data, message)
+        self.control_vertical(data, message)
+        self.control_horisontal(data, message)
+        
         self.apply_dirs(message)
         self.last_message = message
         self.received_message = True
-        #print "message"
     
     def loop(self):
         rate = rospy.Rate(10)  
