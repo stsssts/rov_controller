@@ -1,9 +1,23 @@
 <launch>
-   <machine name="bbb" address="rov-bottom" env-loader="/home/ubuntu/rov_controller/src/bottom/remote_init.sh" user="root" password="temppwd" />
+   <machine name="bbb" address="rov-bottom" env-loader="/home/ubuntu/rov/src/bottom/remote_init.sh" user="root" password="temppwd" />
 
    <rosparam param="joy_node/dev">"/dev/input/js0"</rosparam>
 
    <node name="rov_joy" pkg="joy" type = "joy_node" respawn="true"/>
    <node name="surface" pkg="rov_control" type="surface.py" respawn="true"/>
-   <node machine="bbb" name="bottom" pkg="bottom" type = "bottom.py" respawn="true"/>
+  <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <remap from="image" to="/usb_cam/image_raw"/>
+    <param name="autosize" value="false" />
+  </node>
+
+<node machine="bbb" name="bottom" pkg="bottom" type = "bottom.py" respawn="true"/> 
+  <node machine="bbb" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="320" />
+    <param name="image_height" value="200" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+  </node>
+
 </launch>

@@ -6,6 +6,13 @@ from std_msgs.msg import String
 from rov_control.msg import ControlData
 from sensor_msgs.msg import Joy
 
+def trunc_value(value, high_border = 1, low_border = -1):
+    if value > high_border:
+        value = high_border
+    elif value < low_border:
+        value = low_border
+    return value
+
 class RovController:
     def __init__ (self):
         self.axes = {}
@@ -13,22 +20,18 @@ class RovController:
         self.axes["lag"] = 0
         self.axes["depth"] = 2
         self.axes["yaw"] = 3
-        self.axes["threshold"] = 4
+        self.axes["pitch"] = 4
+        self.axes["threshold"] = 6
 
         self.buttons = {}
-        self.buttons["rotate"] = 0
+        self.buttons["unblock"] = 0
         self.buttons["stop"]   = 1
-        self.buttons["pitch_shift_increase"]  = 4
-        self.buttons["pitch_shift_decrease"]  = 5
 
-        self.pitch_shift = 0
-        self.yaw_shift  = 0
+        self.pitch_shift = 0.0
+        self.yaw_shift  = 0.0
 
         self.BLOCK_MODE = True
 
-        rospy.init_node('surface_side', anonymous=True)
-        self.publisher = rospy.Publisher('rov_control', ControlData, queue_size=10)
-        rospy.Subscriber("joy", Joy, self.callback)
         self.last_message = ControlData()
         self.last_message.stop = True
         self.received_message = False
@@ -37,36 +40,33 @@ class RovController:
                       
         self.dirs = ControlData()
         self.dirs.forward_left  = 1.0
-        self.dirs.forward_right = 1.0
+        self.dirs.forward_right = -1.0
         self.dirs.lag_front     = 1.0
         self.dirs.lag_back      = 1.0
         self.dirs.top_front     = 1.0
         self.dirs.top_back      = 1.0
 
-    def trunc_value(value, high_border = 1, low_border = -1):
-        if value > high_border:
-            value = high_border
-        elif self.THRESHOLD < low_border:
-            value = low_border
+        rospy.init_node('surface_side', anonymous=True)
+        self.publisher = rospy.Publisher('rov_control', ControlData, queue_size=10)
+        rospy.Subscriber("joy", Joy, self.callback)
+
 
     def control_threshold(self, data, message):
-        self.THRESHOLD += data.axes[self.axes["threshold"]]*self.THRESHOLD_STEP
+        t = data.axes[self.axes["threshold"]]*self.THRESHOLD_STEP
+        self.THRESHOLD = t
         self.THRESHOLD = trunc_value(self.THRESHOLD, 1.0, 0)
 
         message.max_level = self.THRESHOLD
 
     def control_stop(self, data, message):
-        if data.buttons[self.buttons["stop"]] == 1 and data.buttons[self.buttons["rotate"]] == 1:
+        if data.buttons[self.buttons["stop"]] == 1 and data.buttons[self.buttons["unblock"]] == 1:
             self.BLOCK_MODE = False
         elif data.buttons[self.buttons["stop"]] == 1:
             self.BLOCK_MODE = True        
         message.stop = self.BLOCK_MODE 
 
     def control_vertical(self, data, message):
-        if data.buttons[self.buttons["pitch_shift_increase"]] == 1:
-            self.pitch_shift += 0.01
-        elif data.buttons[self.buttons["pitch_shift_decrease"]]:
-            self.pitch_shift -= 0.01
+        self.pitch_shift += 0.1*data.axes[self.axes["pitch"]]
         self.pitch_shift = trunc_value(self.pitch_shift)
 
         message.top_front = message.top_back = data.axes[self.axes["depth"]]        
@@ -79,10 +79,10 @@ class RovController:
         message.forward_left = message.forward_right = data.axes[self.axes["forward"]]
         message.lag_front    = message.lag_back      = data.axes[self.axes["lag"]] 
 
-        message.forward_left  = trunc_value(yaw_shift + message.forward_left)
-        message.forward_right = trunc_value(yaw_shift - message.forward_right)
-        message.lag_front     = trunc_value(yaw_shift + message.lag_front)
-        message.lag_back      = trunc_value(yaw_shift - message.lag_back)    
+        message.forward_left  = trunc_value( yaw_shift + message.forward_left)
+        message.forward_right = trunc_value(-yaw_shift + message.forward_right)
+        message.lag_front     = trunc_value( yaw_shift + message.lag_front)
+        message.lag_back      = trunc_value(-yaw_shift + message.lag_back)    
 
     def apply_dirs(self, message):
         message.forward_left  *= self.dirs.forward_left
