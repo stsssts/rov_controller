@@ -1,0 +1,18 @@
+teleop:
+  move:
+    type: topic
+    message_type: openrov_msgs/RovMotion
+    topic_name: /rov/move
+    axis_mappings:
+      -
+        axis: 1
+        target: throttle
+        scale: 100.0
+      -
+        axis: 2
+        target: lift
+        scale: 100.0
+      -
+        axis: 3
+        target: yaw
+        scale: 100.0

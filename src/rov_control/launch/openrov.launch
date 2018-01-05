@@ -1,0 +1,26 @@
+<launch>
+    <machine name="openrov" address="192.168.254.1" env-loader="/home/ubuntu/ros_ws/src/bottom/scripts/remote_init.sh" user="ubuntu" password="temppwd" />
+
+    <rosparam command="load" file="$(find rov_control)/config/joy_teleop.yaml" />
+    <rosparam command="load" file="$(find rov_control)/config/thrusters.yaml" />
+
+    <node name="rov_joy" pkg="joy" type = "joy_node" respawn="true"/>
+    <node name="rov_joy_teleop" pkg="joy_teleop" type = "joy_teleop.py" respawn="true"/>
+
+<!--     <node name="surface" pkg="rov_control" type="surface.py" respawn="true"/> -->
+    <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+        <remap from="image" to="/usb_cam/image_raw"/>
+        <param name="autosize" value="false" />
+    </node>
+
+    <node machine="openrov" name="bottom" pkg="bottom" type = "arduino_controller.py" respawn="true"/> 
+    <node machine="openrov" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
+        <param name="video_device" value="/dev/video0" />
+        <param name="image_width" value="320" />
+        <param name="image_height" value="200" />
+        <param name="pixel_format" value="yuyv" />
+        <param name="camera_frame_id" value="usb_cam" />
+        <param name="io_method" value="mmap"/>
+    </node>
+
+</launch>

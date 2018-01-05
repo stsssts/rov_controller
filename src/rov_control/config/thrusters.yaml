@@ -1,0 +1,13 @@
+thrusters:
+  starboard:
+      reversed: True
+      forward_modifier: 0.5
+      reverse_modifier: 1.0
+  port:
+      reversed: False
+      forward_modifier: 0.5
+      reverse_modifier: 1.0
+  vertical:
+      reversed: False
+      forward_modifier: 0.5
+      reverse_modifier: 1.0
