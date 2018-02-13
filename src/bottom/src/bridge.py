@@ -12,7 +12,12 @@ from pycrc.models import CrcModels
 class CrcEncoder(object):
     def __init__(self, model='dallas-1-wire'):
         self.params = CrcModels().get_params(model)
-        self.encoder = Crc(self.params['width'], self.params['poly'], self.params['reflect_in'], self.params['xor_in'], self.params['reflect_out'], self.params['xor_out'])
+        self.encoder = Crc(self.params['width'],
+                           self.params['poly'],
+                           self.params['reflect_in'],
+                           self.params['xor_in'],
+                           self.params['reflect_out'],
+                           self.params['xor_out'])
 
     def encode(self, msg):
         crc_hex = self.encoder.bit_by_bit(msg)
@@ -29,7 +34,7 @@ class ArduinoBoard(object):
             return
 
         self.debug = debug
-	self.port = None
+        self.port = None
         self.callback = callback
         self.lock = thread.allocate_lock()
         self.crc_encoder = CrcEncoder()
@@ -43,8 +48,8 @@ class ArduinoBoard(object):
 
     def __del__(self):
         if self.debug:
-	    print 'Closing port'
-	if self.port and self.port.is_open:
+           print 'Closing port'
+        if self.port and self.port.is_open:
             self.port.close()
 
 
@@ -81,29 +86,24 @@ class ArduinoBoard(object):
 
 
 def process_messages(message):
-    if 'crc' in message:
-        print(message)
-    if 'mtarg' in message:
-        print(message)
     if 'pong' in message:
         print(message)
-    if 'ligt' in message:
-        print(message)
-    if 'mtrmod' in message:
+    if 'cmd' in message:
         print(message)
     pass
 
 if __name__ == "__main__":
     try:
         arduino = ArduinoBoard(callback=process_messages, debug=True)
-	arduino.send("start();")
-	sleep(3)
+        sleep(3)
+        arduino.send("go(1500,1500,1500);")
         while True:
-	#    arduino.send("go(1500,1500,1500,0);")
-        #    sleep(3)
-	    arduino.send("ping(0);")
-            sleep(0.1)
-	#    arduino.send("dms(0);")
-        #    sleep(3)
+            arduino.send('ping(0);')
+            arduino.send('ligt(300);')
+            sleep(0.5)
+            arduino.send('ligt(255);')
+            sleep(0.5)
+            arduino.send('ligt(100);')
+            sleep(0.5)
     except KeyboardInterrupt:
         pass

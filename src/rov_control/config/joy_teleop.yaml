@@ -1,18 +1,48 @@
 teleop:
-  move:
+  surge:
     type: topic
-    message_type: openrov_msgs/RovMotion
-    topic_name: /rov/move
+    message_type: std_msgs/Float64
+    topic_name: thrust_command/surge
     axis_mappings:
       -
         axis: 1
-        target: throttle
+        target: data
         scale: 100.0
+  heave:
+    type: topic
+    message_type: std_msgs/Float64
+    topic_name: thrust_command/heave
+    axis_mappings:
       -
         axis: 2
-        target: lift
+        target: data
         scale: 100.0
+  yaw:
+    type: topic
+    message_type: std_msgs/Float64
+    topic_name: angular_velocity_command
+    axis_mappings:
       -
         axis: 3
-        target: yaw
-        scale: 100.0
+        target: data
+        scale: -5.0
+
+  light_up:
+    type: topic
+    message_type: std_msgs/UInt8
+    topic_name: lights/inc
+    deadman_buttons: [8]
+    message_value:
+      -
+        target: data
+        value: 20
+  light_down:
+    type: topic
+    message_type: std_msgs/UInt8
+    topic_name: lights/inc
+    deadman_buttons: [8]
+    message_value:
+      -
+        target: data
+        value: -20
+

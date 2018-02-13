@@ -1,4 +1,4 @@
-int8 throttle 
-int8 lift
-int8 yaw
+float32 throttle
+float32 lift
+float32 yaw
 int8 max_level 

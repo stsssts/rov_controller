@@ -6,6 +6,7 @@ project(bottom)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -40,6 +41,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .msg/.srv/.action file to be processed
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
+
+generate_dynamic_reconfigure_options(
+  cfg/Pid.cfg
+)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -105,7 +110,7 @@ include_directories(
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(bottom_node bottom_generate_messages_cpp)
+#add_dependencies(bottom_node ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(bottom_node
